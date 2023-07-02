@@ -29,6 +29,10 @@ class ChatUI {
   private chatRequestChain: Promise<void> = Promise.resolve();
 
   constructor(chat: ChatInterface, localChat: ChatInterface) {
+  private uiDragBox: HTMLElement; // to drag box for the config
+  private uiFileInput: HTMLInputElement;  // input browsing for the config 
+  private modelSelector = getElementAndCheck("chatui-select") as HTMLSelectElement;
+
     // use web worker to run chat generation in background
     this.chat = chat;
     this.localChat = localChat;
@@ -36,6 +40,13 @@ class ChatUI {
     this.uiChat = getElementAndCheck("chatui-chat");
     this.uiChatInput = getElementAndCheck("chatui-input") as HTMLInputElement;
     this.uiChatInfoLabel = getElementAndCheck("chatui-info-label") as HTMLLabelElement;
+
+    // initialize the DragBox
+    this.uiDragBox = getElementAndCheck("drag-box");
+    this.uiFileInput = getElementAndCheck("file-input") as HTMLInputElement;
+    this.initializeDragBox();
+    this.initializeFileInput();
+
     // register event handlers
     getElementAndCheck("chatui-reset-btn").onclick = () => {
       this.onReset();
@@ -50,14 +61,20 @@ class ChatUI {
       }
     };
 
-    const modelSelector = getElementAndCheck("chatui-select") as HTMLSelectElement;
+    this.initialize_model_selector();
+   
+
+    
+  }
+
+  private initialize_model_selector(){
     for (let i = 0; i < this.config.model_list.length; ++i) {
       const item = this.config.model_list[i];
       const opt = document.createElement("option");
       opt.value = item.local_id;
       opt.innerHTML = item.local_id;
       opt.selected = (i == 0);
-      modelSelector.appendChild(opt);
+      this.modelSelector.appendChild(opt);
     }
     // Append local server option to the model selector
     const localServerOpt = document.createElement("option");
@@ -68,7 +85,76 @@ class ChatUI {
     modelSelector.onchange = () => {
       this.onSelectChange(modelSelector);
     };
+
   }
+  private initializeDragBox() {
+    this.uiDragBox.addEventListener('click', (e) => {
+      this.uiFileInput.click();  // programmatically click the file input when drag-drop box is clicked
+    });
+
+    this.uiDragBox.addEventListener('dragover', (e) => {
+      e.preventDefault(); // This is necessary to allow a drop.
+      this.uiDragBox.style.background = '#e8e8e8'; // Change the color of the drop area when dragging over.
+    });
+
+    this.uiDragBox.addEventListener('dragleave', (e) => {
+      this.uiDragBox.style.background = 'none'; // Change the color back when dragging out.
+    });
+
+    this.uiDragBox.addEventListener('drop', (e) => {
+      e.preventDefault(); // This is necessary to handle the drop.
+      this.uiDragBox.style.background = 'none'; // Change the color back when dropping.
+      
+      // e.dataTransfer.files contains the list of dropped files.
+      var files = e.dataTransfer.files;
+
+      // Handle the files here.
+      this.handleDroppedFiles(files);
+    });
+  }
+
+  private initializeFileInput() {
+    this.uiFileInput.addEventListener('change', (e) => {
+      this.handleDroppedFiles(this.uiFileInput.files);
+    });
+  }
+
+  // private handleDroppedFiles(files: FileList) {
+  //   for (let i = 0; i < files.length; i++) {
+  //     // TODO: implement your file handling logic here
+  //     console.log('Received file:', files[i]);
+  //   }
+  // }
+
+  
+  private handleDroppedFiles(files: FileList) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        
+        reader.onload = (event) => {
+            try {
+                const newConfig = JSON.parse(event.target.result);
+                // Here, 'newConfig' contains the parsed JSON from the file.
+                // You can update your app's config with this 'newConfig'.
+                this.handleFileContents(newConfig); // Call the new method to handle the parsed JSON.
+            } catch (error) {
+                console.error('Error parsing the configuration file', error);
+            }
+        };
+        
+        reader.readAsText(file);
+    }
+  }
+  private handleFileContents(newConfig: any) {
+    // TODO: Place your code here to handle the new configuration.
+    // For example, update your app's configuration with 'newConfig'.
+    console.log(newConfig); // For demonstration.
+    this.config = newConfig;
+    this.initialize_model_selector()
+
+  }
+
   /**
    * Push a task to the execution queue.
    *

@@ -1,0 +1,12 @@
+{
+    "model_list": [
+        {
+            "model_url": "https://huggingface.co/mlc-ai/mlc-chat-vicuna-v1-7b-q4f32_0/resolve/main/",
+            "local_id": "my-model"
+        }
+    ],
+    "model_lib_map": {
+        "my-model": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/vicuna-v1-7b-q4f32_0-webgpu.wasm"
+    },
+    "use_web_worker": true
+}
